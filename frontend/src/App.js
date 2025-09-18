@@ -8,7 +8,8 @@ function App() {
 
   const handleGetRequest = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/greetings`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/greetings`);
       const data = await response.json();
       setGetResponse(data.message);
     } catch (error) {
@@ -21,7 +22,8 @@ function App() {
     if (!inputValue.trim()) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/greetings`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/greetings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
