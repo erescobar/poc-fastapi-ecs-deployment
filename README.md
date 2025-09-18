@@ -140,6 +140,103 @@ aws ecr batch-delete-image --repository-name name-space/repo --image-ids imageTa
 aws ecr describe-images --repository-name name-space/repo --region region-aws
 ```
 
+## Despliegue en AWS ECS
+
+### Prerrequisitos ECS
+
+- Cluster ECS creado: `arn:aws:ecs:region-aws:my-account-id:cluster/cluster-name`
+- Imagen subida a ECR con tag descriptivo
+- Rol de ejecución de tareas (taskExecutionRole) configurado
+
+### 1. Crear Task Definition
+
+Crear archivo `task-definition.json`:
+
+```json
+{
+  "family": "fastapi-greetings-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::my-account-id:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "fastapi-greetings",
+      "image": "my-account-id.dkr.ecr.region-aws.amazonaws.com/name-space/repo:fastapi-greetings-v1.0",
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/fastapi-greetings",
+          "awslogs-region": "region-aws",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
+```
+
+### 2. Registrar Task Definition
+
+```bash
+# Crear log group en CloudWatch
+aws logs create-log-group --log-group-name /ecs/fastapi-greetings --region region-aws
+
+# Registrar la task definition
+aws ecs register-task-definition --cli-input-json file://task-definition.json --region region-aws
+```
+
+### 3. Crear Service en ECS
+
+```bash
+# Crear service (reemplaza subnet-xxx y sg-xxx con tus valores)
+aws ecs create-service \
+  --cluster cluster-name \
+  --service-name fastapi-greetings-service \
+  --task-definition fastapi-greetings-task \
+  --desired-count 1 \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-xxx],securityGroups=[sg-xxx],assignPublicIp=ENABLED}" \
+  --region region-aws
+```
+
+### 4. Verificar despliegue
+
+```bash
+# Ver estado del service
+aws ecs describe-services --cluster cluster-name --services fastapi-greetings-service --region region-aws
+
+# Ver tareas en ejecución
+aws ecs list-tasks --cluster cluster-name --service-name fastapi-greetings-service --region region-aws
+
+# Ver logs de la aplicación
+aws logs get-log-events --log-group-name /ecs/fastapi-greetings --log-stream-name ecs/fastapi-greetings/TASK-ID --region region-aws
+```
+
+### Comandos de gestión ECS
+
+```bash
+# Actualizar service con nueva imagen
+aws ecs update-service --cluster cluster-name --service fastapi-greetings-service --force-new-deployment --region region-aws
+
+# Escalar service
+aws ecs update-service --cluster cluster-name --service fastapi-greetings-service --desired-count 2 --region region-aws
+
+# Parar service
+aws ecs update-service --cluster cluster-name --service fastapi-greetings-service --desired-count 0 --region region-aws
+
+# Eliminar service
+aws ecs delete-service --cluster cluster-name --service fastapi-greetings-service --force --region region-aws
+```
+
 ### Documentación automática
 
 FastAPI genera documentación automática:
