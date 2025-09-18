@@ -292,15 +292,105 @@ curl -X POST "http://localhost:8000/greetings" \
 }
 ```
 
+## Frontend React
+
+### Desarrollo Local del Frontend
+
+#### 1. Navegar al directorio del frontend
+
+```bash
+cd frontend
+```
+
+#### 2. Instalar dependencias
+
+```bash
+npm install
+```
+
+#### 3. Configurar variables de entorno
+
+El frontend usa un archivo `.env` para configurar la URL del backend:
+
+```bash
+# Contenido del archivo frontend/.env
+REACT_APP_API_URL=http://localhost:8000
+```
+
+#### 4. Ejecutar el frontend en desarrollo
+
+```bash
+npm start
+```
+
+El frontend estará disponible en: `http://localhost:3000`
+
+### Docker para Frontend
+
+#### 1. Construir la imagen Docker del frontend
+
+```bash
+# Desde el directorio frontend/
+# Con URL por defecto (localhost:8000)
+docker build -t react-frontend .
+
+# Con URL personalizada del backend
+docker build --build-arg REACT_APP_API_URL=http://host.docker.internal:8000 -t react-frontend .
+
+# Para usar con backend en otro servidor
+docker build --build-arg REACT_APP_API_URL=https://tu-backend-url.com -t react-frontend .
+```
+
+#### 2. Ejecutar el contenedor del frontend
+
+```bash
+# Ejecutar en primer plano
+docker run -p 3000:80 react-frontend
+
+# Ejecutar en segundo plano
+docker run -d -p 3000:80 --name react-frontend-container react-frontend
+```
+
+**Nota importante:** Si tu backend FastAPI está corriendo en localhost:8000 en tu máquina host, usa `host.docker.internal:8000` como URL del backend al construir la imagen Docker:
+
+El frontend estará disponible en: `http://localhost:3000`
+
+### Configuración de Producción
+
+Para producción, asegúrate de actualizar la variable de entorno `REACT_APP_API_URL` en el archivo `.env` con la URL correcta de tu backend:
+
+```bash
+# Para producción
+REACT_APP_API_URL=https://tu-backend-url.com
+```
+
+### Características del Frontend
+
+- **Interfaz simple**: Título "Hello POC"
+- **Botón GET**: Llama al endpoint `/greetings` y muestra la respuesta
+- **Formulario POST**: Campo de entrada con validación y botón de envío
+- **Validación**: El botón de envío solo se activa cuando hay texto en el input
+- **Respuestas en pantalla**: Muestra las respuestas de ambos endpoints
+- **Diseño responsive**: Formulario con input y botón alineados horizontalmente
+
 ## Estructura del Proyecto
 
 ```
 poc_ecs/
-├── main.py           # Aplicación principal de FastAPI
-├── requirements.txt  # Dependencias del proyecto
-├── Dockerfile        # Configuración Docker
-├── .dockerignore     # Archivos excluidos de Docker
-└── README.md         # Este archivo
+├── main.py                    # Aplicación principal de FastAPI
+├── requirements.txt           # Dependencias del proyecto Python
+├── Dockerfile                 # Configuración Docker para backend
+├── .dockerignore             # Archivos excluidos de Docker (backend)
+├── frontend/                  # Aplicación React
+│   ├── src/
+│   │   ├── App.js            # Componente principal React
+│   │   ├── App.css           # Estilos del frontend
+│   │   └── ...               # Otros archivos React
+│   ├── package.json          # Dependencias del frontend
+│   ├── Dockerfile            # Configuración Docker para frontend
+│   ├── .dockerignore         # Archivos excluidos de Docker (frontend)
+│   └── .env                  # Variables de entorno del frontend
+└── README.md                 # Este archivo
 ```
 
 ## Comandos Útiles
